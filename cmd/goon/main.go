@@ -13,22 +13,29 @@ import (
 func main() {
 	builder := tool.
 		New().
-		WithGlobalFlags(&cli.BoolFlag{Name: "verbose", Aliases: []string{"v"}}).
 		WithCommands(
 			tool.
 				NewCommand("size").
-				WithUsage("Convert size strings (e.g., 1.5MiB, 72KiB, 2PB) into integer bytes. Supports scientific notation too (e.g., 532e-3eib).").
+				WithFlags(&cli.BoolFlag{Name: "short", Aliases: []string{"s"}, Usage: "Display only the byte count without additional text or formatting."}).
+				WithUsage("Convert size strings (e.g., 1.5MiB, 72KiB, 2PB) into integer bytes. Supports scientific notation (e.g., 532e-3eib).").
 				WithAction(func(ctx context.Context, command *cli.Command) error {
 					if !command.Args().Present() {
 						return fmt.Errorf("need at least one size to parse")
 					}
 
-					i, err := size.ParseSizeFromString(command.Args().First())
-					if err != nil {
-						return err
-					}
+					for _, arg := range command.Args().Slice() {
+						sizeObject, err := size.ParseSizeFromString(arg)
+						if err != nil {
+							fmt.Printf("%s: %s\n", err, arg)
+							continue
+						}
 
-					fmt.Println(i)
+						if command.Bool("short") {
+							fmt.Println(sizeObject.Int())
+						} else {
+							fmt.Printf("%s = %d bytes\n", sizeObject.String(), sizeObject.Int())
+						}
+					}
 
 					return nil
 				}),

@@ -2,6 +2,7 @@ package size
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"regexp"
 	"strings"
@@ -36,6 +37,39 @@ var (
 
 var sizeRegexp = regexp.MustCompile(`(?i)^([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)([KMGTPE]i?B|B)$`)
 
+func (u unit) String() string {
+	switch u {
+	case B:
+		return "B"
+	case KB:
+		return "KB"
+	case MB:
+		return "MB"
+	case GB:
+		return "GB"
+	case TB:
+		return "TB"
+	case PB:
+		return "PB"
+	case EB:
+		return "EB"
+	case KiB:
+		return "KiB"
+	case MiB:
+		return "MiB"
+	case GiB:
+		return "GiB"
+	case TiB:
+		return "TiB"
+	case PiB:
+		return "PiB"
+	case EiB:
+		return "EiB"
+	default:
+		return ""
+	}
+}
+
 func (u unit) DecimalFactor() *big.Float {
 	switch u {
 	case B:
@@ -65,29 +99,49 @@ func (u unit) DecimalFactor() *big.Float {
 	case EiB:
 		return new(big.Float).SetUint64(1 << 60)
 	default:
-		return big.NewFloat(0)
+		return nil
 	}
 }
 
-func (s Size) ToInt() *big.Int {
+func (s Size) Int() *big.Int {
 	factor := s.Unit.DecimalFactor()
+	if factor == nil {
+		return nil
+	}
 	result := new(big.Float).Mul(s.Quantity, factor)
 	i := new(big.Int)
 	result.Int(i)
 	return i
 }
 
-func ParseSizeFromString(size string) (*big.Int, error) {
+func (s Size) String() string {
+	bytes := new(big.Float).Mul(s.Quantity, s.Unit.DecimalFactor())
+
+	units := []struct{ unit unit }{{B}, {KB}, {MB}, {GB}, {TB}, {PB}, {EB}}
+
+	for _, u := range units {
+		factor := u.unit.DecimalFactor()
+		normalized := new(big.Float).Quo(bytes, factor)
+
+		if f, _ := normalized.Float64(); f < 1000 {
+			return fmt.Sprintf("%.3g%s", normalized, u.unit.String())
+		}
+	}
+
+	return fmt.Sprintf("%sB", bytes.Text('f', 0))
+}
+
+func ParseSizeFromString(size string) (*Size, error) {
 	size = strings.TrimSpace(size)
 
 	match := sizeRegexp.FindStringSubmatch(size)
 	if match == nil {
-		return new(big.Int), ErrInvalidSizeString
+		return nil, ErrInvalidSizeString
 	}
 
 	value, _, err := big.ParseFloat(match[1], 10, 256, big.ToZero)
 	if err != nil {
-		return new(big.Int), ErrInvalidSizeString
+		return nil, ErrInvalidSizeString
 	}
 
 	unitStr := strings.ToLower(match[2])
@@ -121,8 +175,8 @@ func ParseSizeFromString(size string) (*big.Int, error) {
 	case "eib":
 		u = EiB
 	default:
-		return new(big.Int), ErrInvalidSizeString
+		return nil, ErrInvalidSizeString
 	}
 
-	return Size{Quantity: value, Unit: u}.ToInt(), nil
+	return &Size{Quantity: value, Unit: u}, nil
 }
