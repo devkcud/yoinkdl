@@ -2,121 +2,101 @@ package size
 
 import (
 	"fmt"
+	"math/big"
+	"regexp"
 	"strings"
 )
 
-type tokenType int
+func tokenizeExpression(input string) ([]string, error) {
+	input = strings.TrimSpace(input)
+	pattern := regexp.MustCompile(`(?i)([\d.eE+\-]+[KMGTPE]?i?B)|([()+\-*/])`)
 
-const (
-	tokenNumber tokenType = iota
-	tokenOperator
-	tokenLeftParenthesis
-	tokenRightParenthesis
-)
-
-type token struct {
-	tokenType tokenType
-	literal   string
-}
-
-var operatorPrecedence = map[string]int{"+": 1, "-": 1, "*": 2, "/": 2}
-
-func tokenize(expression string) ([]token, error) {
-	var tokens []token
-	remaining := strings.TrimSpace(expression)
-
-	for len(remaining) > 0 {
-		if strings.HasPrefix(remaining, " ") {
-			remaining = remaining[1:]
-			continue
-		}
-
-		if opMatch := operatorRegex.FindString(remaining); opMatch != "" {
-			var tt tokenType = tokenOperator
-			if opMatch == "(" {
-				tt = tokenLeftParenthesis
-			} else if opMatch == ")" {
-				tt = tokenRightParenthesis
-			}
-
-			tokens = append(tokens, token{tokenType: tt, literal: opMatch})
-			remaining = remaining[len(opMatch):]
-			continue
-		}
-
-		if numMatch := sizeRegex.FindString(remaining); numMatch != "" {
-			afterNumber := remaining[len(numMatch):]
-			literal := numMatch
-			if !strings.HasSuffix(strings.ToUpper(literal), "B") {
-				literal += "B"
-			}
-			tokens = append(tokens, token{tokenType: tokenNumber, literal: literal})
-			remaining = afterNumber
-			continue
-		}
-
-		return nil, fmt.Errorf("%w at %q", ErrInvalidExpr, remaining)
+	matches := pattern.FindAllString(input, -1)
+	if matches == nil {
+		return nil, fmt.Errorf("invalid expression: %s", input)
 	}
 
-	return tokens, nil
+	return matches, nil
 }
 
-func toRPN(tokens []token) ([]token, error) {
-	var outputQueue []token
-	var operatorStack []token
+func shuntingYard(tokens []string) ([]string, error) {
+	var output, stack []string
+	precedence := map[string]int{"+": 1, "-": 1, "*": 2, "/": 2}
 
-	pushOperator := func(op token) {
-		for len(operatorStack) > 0 {
-			top := operatorStack[len(operatorStack)-1]
-			if top.tokenType != tokenOperator {
-				break
+	for _, token := range tokens {
+		if operatorRegex.MatchString(token) {
+			for len(stack) > 0 && precedence[stack[len(stack)-1]] >= precedence[token] {
+				output = append(output, stack[len(stack)-1])
+				stack = stack[:len(stack)-1]
 			}
-			if operatorPrecedence[top.literal] >= operatorPrecedence[op.literal] {
-				outputQueue = append(outputQueue, top)
-				operatorStack = operatorStack[:len(operatorStack)-1]
-				continue
+			stack = append(stack, token)
+		} else if token == "(" {
+			stack = append(stack, token)
+		} else if token == ")" {
+			for len(stack) > 0 && stack[len(stack)-1] != "(" {
+				output = append(output, stack[len(stack)-1])
+				stack = stack[:len(stack)-1]
 			}
-			break
+			if len(stack) == 0 {
+				return nil, fmt.Errorf("mismatched parentheses")
+			}
+			stack = stack[:len(stack)-1]
+		} else {
+			output = append(output, token)
 		}
-		operatorStack = append(operatorStack, op)
 	}
 
-	for _, tk := range tokens {
-		switch tk.tokenType {
-		case tokenNumber:
-			outputQueue = append(outputQueue, tk)
+	for len(stack) > 0 {
+		if stack[len(stack)-1] == "(" || stack[len(stack)-1] == ")" {
+			return nil, fmt.Errorf("mismatched parentheses")
+		}
+		output = append(output, stack[len(stack)-1])
+		stack = stack[:len(stack)-1]
+	}
 
-		case tokenOperator:
-			pushOperator(tk)
+	return output, nil
+}
 
-		case tokenLeftParenthesis:
-			operatorStack = append(operatorStack, tk)
+func evaluateRPN(tokens []string) (*big.Int, error) {
+	var stack []*big.Int
 
-		case tokenRightParenthesis:
-			foundLParen := false
-			for len(operatorStack) > 0 {
-				top := operatorStack[len(operatorStack)-1]
-				operatorStack = operatorStack[:len(operatorStack)-1]
-				if top.tokenType == tokenLeftParenthesis {
-					foundLParen = true
-					break
+	for _, token := range tokens {
+		if operatorRegex.MatchString(token) {
+			if len(stack) < 2 {
+				return nil, fmt.Errorf("invalid expression")
+			}
+			right, left := stack[len(stack)-1], stack[len(stack)-2]
+			stack = stack[:len(stack)-2]
+
+			var res big.Int
+			switch token {
+			case "+":
+				res.Add(left, right)
+			case "-":
+				res.Sub(left, right)
+			case "*":
+				res.Mul(left, right)
+			case "/":
+				if right.Cmp(big.NewInt(0)) == 0 {
+					return nil, fmt.Errorf("division by zero")
 				}
-				outputQueue = append(outputQueue, top)
+				res.Div(left, right)
+			default:
+				return nil, fmt.Errorf("unsupported operator: %s", token)
 			}
-			if !foundLParen {
-				return nil, ErrInvalidExpr
+			stack = append(stack, &res)
+		} else {
+			size, err := ParseSizeFromString(token)
+			if err != nil {
+				return nil, err
 			}
+			stack = append(stack, size.Int())
 		}
 	}
 
-	for len(operatorStack) > 0 {
-		top := operatorStack[len(operatorStack)-1]
-		operatorStack = operatorStack[:len(operatorStack)-1]
-		if top.tokenType == tokenLeftParenthesis {
-			return nil, ErrInvalidExpr
-		}
-		outputQueue = append(outputQueue, top)
+	if len(stack) != 1 {
+		return nil, fmt.Errorf("invalid expression")
 	}
 
-	return outputQueue, nil
+	return stack[0], nil
 }
