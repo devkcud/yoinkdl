@@ -6,12 +6,28 @@ import (
 )
 
 func tokenizeExpression(input string) ([]string, error) {
-	matches := arithmeticRegex.FindAllString(input, -1)
-	if matches == nil || len(matches) == 0 {
-		return nil, fmt.Errorf("invalid expression: %s", input)
+	spans := arithmeticRegex.FindAllStringIndex(input, -1)
+	if len(spans) == 0 {
+		return nil, fmt.Errorf("invalid expression: %q", input)
 	}
 
-	return matches, nil
+	pos := 0
+	for _, span := range spans {
+		if span[0] != pos {
+			return nil, fmt.Errorf("unrecognized token at pos %d in %q", pos, input)
+		}
+		pos = span[1]
+	}
+	if pos != len(input) {
+		return nil, fmt.Errorf("unrecognized token at pos %d in %q", pos, input)
+	}
+
+	tokens := make([]string, len(spans))
+	for i, span := range spans {
+		tokens[i] = input[span[0]:span[1]]
+	}
+
+	return tokens, nil
 }
 
 func shuntingYard(tokens []string) ([]string, error) {

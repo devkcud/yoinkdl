@@ -34,9 +34,10 @@ const (
 )
 
 var (
-	arithmeticRegex = regexp.MustCompile(`(?i)([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?[KMGTPEZY]?i?B|[()+\-*/])`)
-	sizeRegex       = regexp.MustCompile(`(?i)^([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)([KMGTPEZY]i?B|B)$`)
-	operatorRegex   = regexp.MustCompile(`^[+\-*/()]`)
+	validExpressionRegex = regexp.MustCompile(`^[0-9eE\.\+\-\*\/\(\)\sKMGTPEZYiB]+$`)
+	arithmeticRegex      = regexp.MustCompile(`(?i)([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?[KMGTPEZY]?i?B|[()+\-*/])`)
+	sizeRegex            = regexp.MustCompile(`(?i)^([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)([KMGTPEZY]i?B|B)$`)
+	operatorRegex        = regexp.MustCompile(`^[+\-*/()]`)
 )
 
 func (u unit) String() string {

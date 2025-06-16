@@ -1,9 +1,20 @@
 package size
 
-import "math/big"
+import (
+	"fmt"
+	"math/big"
+	"strings"
+)
 
 func Eval(expr string) (*Size, error) {
-	tokens, err := tokenizeExpression(expr)
+	compact := strings.ReplaceAll(expr, "\t", "")
+	compact = strings.ReplaceAll(compact, "\n", "")
+
+	if !validExpressionRegex.MatchString(compact) {
+		return nil, fmt.Errorf("invalid character in expression: %q", expr)
+	}
+
+	tokens, err := tokenizeExpression(compact)
 	if err != nil {
 		return nil, err
 	}
