@@ -38,7 +38,29 @@ func main() {
 					}
 
 					return nil
-				}),
+				}).
+				WithSubcommand(
+					tool.
+						NewCommand("normalize", "normal").
+						WithUsage("Normalize a size into human-readable string.").
+						WithAction(func(ctx context.Context, command *cli.Command) error {
+							if !command.Args().Present() {
+								return fmt.Errorf("need at least one size to parse")
+							}
+
+							for _, arg := range command.Args().Slice() {
+								sizeObject, err := size.ParseSizeFromString(arg)
+								if err != nil {
+									fmt.Printf("%s: %s\n", err, arg)
+									continue
+								}
+
+								fmt.Printf("%s\n", sizeObject.String())
+							}
+
+							return nil
+						}),
+				),
 			tool.
 				NewCommand("math").
 				WithFlags(&cli.BoolFlag{Name: "short", Aliases: []string{"s"}, Usage: "Show raw byte count."}).
