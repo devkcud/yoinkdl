@@ -3,13 +3,10 @@ package size
 import (
 	"fmt"
 	"math/big"
-	"regexp"
 )
 
 func tokenizeExpression(input string) ([]string, error) {
-	pattern := regexp.MustCompile(`(?i)([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?[KMGTPE]?i?B|[()+\-*/])`)
-
-	matches := pattern.FindAllString(input, -1)
+	matches := arithmeticRegex.FindAllString(input, -1)
 	if matches == nil || len(matches) == 0 {
 		return nil, fmt.Errorf("invalid expression: %s", input)
 	}
@@ -22,15 +19,16 @@ func shuntingYard(tokens []string) ([]string, error) {
 	precedence := map[string]int{"+": 1, "-": 1, "*": 2, "/": 2}
 
 	for _, token := range tokens {
-		if operatorRegex.MatchString(token) {
+		switch token {
+		case "+", "-", "*", "/":
 			for len(stack) > 0 && precedence[stack[len(stack)-1]] >= precedence[token] {
 				output = append(output, stack[len(stack)-1])
 				stack = stack[:len(stack)-1]
 			}
 			stack = append(stack, token)
-		} else if token == "(" {
+		case "(":
 			stack = append(stack, token)
-		} else if token == ")" {
+		case ")":
 			for len(stack) > 0 && stack[len(stack)-1] != "(" {
 				output = append(output, stack[len(stack)-1])
 				stack = stack[:len(stack)-1]
@@ -39,7 +37,7 @@ func shuntingYard(tokens []string) ([]string, error) {
 				return nil, fmt.Errorf("mismatched parentheses")
 			}
 			stack = stack[:len(stack)-1]
-		} else {
+		default:
 			output = append(output, token)
 		}
 	}
@@ -59,7 +57,8 @@ func evaluateRPN(tokens []string) (*big.Int, error) {
 	var stack []*big.Int
 
 	for _, token := range tokens {
-		if operatorRegex.MatchString(token) {
+		switch token {
+		case "+", "-", "*", "/":
 			if len(stack) < 2 {
 				return nil, fmt.Errorf("invalid expression")
 			}
@@ -79,11 +78,9 @@ func evaluateRPN(tokens []string) (*big.Int, error) {
 					return nil, fmt.Errorf("division by zero")
 				}
 				res.Div(left, right)
-			default:
-				return nil, fmt.Errorf("unsupported operator: %s", token)
 			}
 			stack = append(stack, &res)
-		} else {
+		default:
 			size, err := ParseSizeFromString(token)
 			if err != nil {
 				return nil, err
