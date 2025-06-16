@@ -39,6 +39,31 @@ func main() {
 
 					return nil
 				}),
+			tool.
+				NewCommand("math").
+				WithFlags(&cli.BoolFlag{Name: "short", Aliases: []string{"s"}, Usage: "Display only the byte count without additional text or formatting."}).
+				WithUsage("Calculate simple arithmetic expressions with data sizes (for example: \"1e+3MB - 5MiB + 10GiB * 8B\").").
+				WithAction(func(ctx context.Context, command *cli.Command) error {
+					if !command.Args().Present() {
+						return fmt.Errorf("need at least one size to parse")
+					}
+
+					for _, arg := range command.Args().Slice() {
+						sizeObject, err := size.Eval(arg)
+						if err != nil {
+							fmt.Printf("%s: %s\n", err, arg)
+							continue
+						}
+
+						if command.Bool("short") {
+							fmt.Println(sizeObject.Int())
+						} else {
+							fmt.Printf("%s = %d bytes\n", sizeObject.String(), sizeObject.Int())
+						}
+					}
+
+					return nil
+				}),
 		)
 
 	if err := builder.Run(); err != nil {
