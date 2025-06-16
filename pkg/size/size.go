@@ -100,7 +100,7 @@ func (u unit) DecimalFactor() *big.Float {
 	case ZB:
 		return big.NewFloat(1e21)
 	case YB:
-		return big.NewFloat(1e24)
+		return new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(24), nil))
 	case KiB:
 		return new(big.Float).SetUint64(1 << 10)
 	case MiB:
