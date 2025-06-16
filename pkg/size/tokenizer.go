@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"math/big"
 	"regexp"
-	"strings"
 )
 
 func tokenizeExpression(input string) ([]string, error) {
-	input = strings.TrimSpace(input)
-	pattern := regexp.MustCompile(`(?i)([\d.eE+\-]+[KMGTPE]?i?B)|([()+\-*/])`)
+	pattern := regexp.MustCompile(`(?i)([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?[KMGTPE]?i?B|[()+\-*/])`)
 
 	matches := pattern.FindAllString(input, -1)
-	if matches == nil {
+	if matches == nil || len(matches) == 0 {
 		return nil, fmt.Errorf("invalid expression: %s", input)
 	}
 
@@ -97,6 +95,5 @@ func evaluateRPN(tokens []string) (*big.Int, error) {
 	if len(stack) != 1 {
 		return nil, fmt.Errorf("invalid expression")
 	}
-
 	return stack[0], nil
 }
