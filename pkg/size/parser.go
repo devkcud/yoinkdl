@@ -39,6 +39,10 @@ func ParseSizeFromString(size string) (*Size, error) {
 		u = PB
 	case "eb":
 		u = EB
+	case "zb":
+		u = ZB
+	case "yb":
+		u = YB
 	case "kib":
 		u = KiB
 	case "mib":
@@ -51,6 +55,10 @@ func ParseSizeFromString(size string) (*Size, error) {
 		u = PiB
 	case "eib":
 		u = EiB
+	case "zib":
+		u = ZiB
+	case "yib":
+		u = YiB
 	default:
 		return nil, ErrInvalidSizeString
 	}
