@@ -7,7 +7,8 @@ import (
 )
 
 func Eval(expr string) (*Size, error) {
-	compact := strings.ReplaceAll(expr, "\t", "")
+	compact := strings.ReplaceAll(expr, " ", "")
+	compact = strings.ReplaceAll(compact, "\t", "")
 	compact = strings.ReplaceAll(compact, "\n", "")
 
 	if !validExpressionRegex.MatchString(compact) {
