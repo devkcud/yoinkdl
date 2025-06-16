@@ -16,8 +16,8 @@ func main() {
 		WithCommands(
 			tool.
 				NewCommand("size").
-				WithFlags(&cli.BoolFlag{Name: "short", Aliases: []string{"s"}, Usage: "Display only the byte count without additional text or formatting."}).
-				WithUsage("Convert size strings (e.g., 1.5MiB, 72KiB, 2PB) into integer bytes. Supports scientific notation (e.g., 532e-3eib).").
+				WithFlags(&cli.BoolFlag{Name: "short", Aliases: []string{"s"}, Usage: "Show raw byte count."}).
+				WithUsage("Parse human-readable size strings (e.g. 1.5MiB, 72KiB, 2PB, 532e-3EiB) and output an integer byte count.").
 				WithAction(func(ctx context.Context, command *cli.Command) error {
 					if !command.Args().Present() {
 						return fmt.Errorf("need at least one size to parse")
@@ -41,11 +41,11 @@ func main() {
 				}),
 			tool.
 				NewCommand("math").
-				WithFlags(&cli.BoolFlag{Name: "short", Aliases: []string{"s"}, Usage: "Display only the byte count without additional text or formatting."}).
-				WithUsage("Calculate simple arithmetic expressions with data sizes (for example: \"1e+3MB - 5MiB + 10GiB * 8B\").").
+				WithFlags(&cli.BoolFlag{Name: "short", Aliases: []string{"s"}, Usage: "Show raw byte count."}).
+				WithUsage("Evaluate arithmetic expressions combining size literals (e.g. 1e+3MB-5MiB+10GiB*8B) and output the result in bytes.").
 				WithAction(func(ctx context.Context, command *cli.Command) error {
 					if !command.Args().Present() {
-						return fmt.Errorf("need at least one size to parse")
+						return fmt.Errorf("need at least one expression to parse")
 					}
 
 					for _, arg := range command.Args().Slice() {
