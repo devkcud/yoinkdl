@@ -3,6 +3,7 @@ package size
 import (
 	"fmt"
 	"math/big"
+	"regexp"
 )
 
 type unit int
@@ -26,6 +27,11 @@ const (
 	TiB
 	PiB
 	EiB
+)
+
+var (
+	sizeRegex     = regexp.MustCompile(`(?i)^([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)([KMGTPE]i?B|B)$`)
+	operatorRegex = regexp.MustCompile(`^[+\-*/()]`)
 )
 
 func (u unit) String() string {

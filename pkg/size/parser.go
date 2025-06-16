@@ -3,18 +3,15 @@ package size
 import (
 	"errors"
 	"math/big"
-	"regexp"
 	"strings"
 )
 
 var ErrInvalidSizeString error = errors.New("invalid size string")
 
-var sizeRegexp = regexp.MustCompile(`(?i)^([0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)([KMGTPE]i?B|B)$`)
-
 func ParseSizeFromString(size string) (*Size, error) {
 	size = strings.TrimSpace(size)
 
-	match := sizeRegexp.FindStringSubmatch(size)
+	match := sizeRegex.FindStringSubmatch(size)
 	if match == nil {
 		return nil, ErrInvalidSizeString
 	}

@@ -22,12 +22,12 @@ func Eval(expr string) (*Size, error) {
 
 	stack := []*big.Float{}
 
-	for _, tok := range rpn {
-		switch tok.tokenType {
+	for _, token := range rpn {
+		switch token.tokenType {
 		case tokenNumber:
-			sz, err := ParseSizeFromString(tok.value)
+			sz, err := ParseSizeFromString(token.literal)
 			if err != nil {
-				return nil, fmt.Errorf("%w: %s", ErrInvalidExpr, tok.value)
+				return nil, fmt.Errorf("%w: %s", ErrInvalidExpr, token.literal)
 			}
 
 			bytes := new(big.Float).Mul(sz.Quantity, sz.Unit.DecimalFactor())
@@ -43,7 +43,7 @@ func Eval(expr string) (*Size, error) {
 
 			res := new(big.Float)
 
-			switch tok.value {
+			switch token.literal {
 			case "+":
 				res.Add(a, b)
 			case "-":

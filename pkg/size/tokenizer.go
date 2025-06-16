@@ -2,7 +2,6 @@ package size
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 )
 
@@ -17,112 +16,107 @@ const (
 
 type token struct {
 	tokenType tokenType
-	value     string
+	literal   string
 }
 
-var (
-	operationPrecedence = map[string]int{"+": 1, "-": 1, "*": 2, "/": 2}
-	operationRegex      = regexp.MustCompile(`^[+\-*/()]`)
-)
+var operatorPrecedence = map[string]int{"+": 1, "-": 1, "*": 2, "/": 2}
 
-func tokenize(input string) ([]token, error) {
+func tokenize(expression string) ([]token, error) {
 	var tokens []token
-	input = strings.TrimSpace(input)
+	remaining := strings.TrimSpace(expression)
 
-	for len(input) > 0 {
-		if strings.HasPrefix(input, " ") {
-			input = input[1:]
+	for len(remaining) > 0 {
+		if strings.HasPrefix(remaining, " ") {
+			remaining = remaining[1:]
 			continue
 		}
 
-		if m := operationRegex.FindString(input); m != "" {
-			tokenType := tokenOperator
-			if m == "(" {
-				tokenType = tokenLeftParenthesis
-			} else if m == ")" {
-				tokenType = tokenRightParenthesis
+		if opMatch := operatorRegex.FindString(remaining); opMatch != "" {
+			var tt tokenType = tokenOperator
+			if opMatch == "(" {
+				tt = tokenLeftParenthesis
+			} else if opMatch == ")" {
+				tt = tokenRightParenthesis
 			}
 
-			tokens = append(tokens, token{tokenType, m})
-			input = input[len(m):]
+			tokens = append(tokens, token{tokenType: tt, literal: opMatch})
+			remaining = remaining[len(opMatch):]
 			continue
 		}
 
-		if raw := sizeRegexp.FindString(input); raw != "" {
-			rest := input[len(raw):]
-
-			tokenString := raw
-			if !strings.HasSuffix(strings.ToUpper(tokenString), "B") {
-				tokenString += "B"
+		if numMatch := sizeRegex.FindString(remaining); numMatch != "" {
+			afterNumber := remaining[len(numMatch):]
+			literal := numMatch
+			if !strings.HasSuffix(strings.ToUpper(literal), "B") {
+				literal += "B"
 			}
-
-			tokens = append(tokens, token{tokenNumber, tokenString})
-			input = rest
+			tokens = append(tokens, token{tokenType: tokenNumber, literal: literal})
+			remaining = afterNumber
 			continue
 		}
 
-		return nil, fmt.Errorf("%w at %q", ErrInvalidExpr, input)
+		return nil, fmt.Errorf("%w at %q", ErrInvalidExpr, remaining)
 	}
 
 	return tokens, nil
 }
 
 func toRPN(tokens []token) ([]token, error) {
-	var out []token
-	var tokenizations []token
+	var outputQueue []token
+	var operatorStack []token
 
-	pushToken := func(token token) {
-		for len(tokenizations) > 0 {
-			top := tokenizations[len(tokenizations)-1]
+	pushOperator := func(op token) {
+		for len(operatorStack) > 0 {
+			top := operatorStack[len(operatorStack)-1]
 			if top.tokenType != tokenOperator {
 				break
 			}
-			if operationPrecedence[top.value] >= operationPrecedence[token.value] {
-				out = append(out, top)
-				tokenizations = tokenizations[:len(tokenizations)-1]
-			} else {
-				break
+			if operatorPrecedence[top.literal] >= operatorPrecedence[op.literal] {
+				outputQueue = append(outputQueue, top)
+				operatorStack = operatorStack[:len(operatorStack)-1]
+				continue
 			}
+			break
 		}
-		tokenizations = append(tokenizations, token)
+		operatorStack = append(operatorStack, op)
 	}
 
-	for _, tok := range tokens {
-		switch tok.tokenType {
+	for _, tk := range tokens {
+		switch tk.tokenType {
 		case tokenNumber:
-			out = append(out, tok)
-		case tokenOperator:
-			pushToken(tok)
-		case tokenLeftParenthesis:
-			tokenizations = append(tokenizations, tok)
-		case tokenRightParenthesis:
-			found := false
-			for len(tokenizations) > 0 {
-				top := tokenizations[len(tokenizations)-1]
-				tokenizations = tokenizations[:len(tokenizations)-1]
+			outputQueue = append(outputQueue, tk)
 
+		case tokenOperator:
+			pushOperator(tk)
+
+		case tokenLeftParenthesis:
+			operatorStack = append(operatorStack, tk)
+
+		case tokenRightParenthesis:
+			foundLParen := false
+			for len(operatorStack) > 0 {
+				top := operatorStack[len(operatorStack)-1]
+				operatorStack = operatorStack[:len(operatorStack)-1]
 				if top.tokenType == tokenLeftParenthesis {
-					found = true
+					foundLParen = true
 					break
 				}
-
-				out = append(out, top)
+				outputQueue = append(outputQueue, top)
 			}
-
-			if !found {
+			if !foundLParen {
 				return nil, ErrInvalidExpr
 			}
 		}
 	}
 
-	for len(tokenizations) > 0 {
-		if tokenizations[len(tokenizations)-1].tokenType == tokenLeftParenthesis {
+	for len(operatorStack) > 0 {
+		top := operatorStack[len(operatorStack)-1]
+		operatorStack = operatorStack[:len(operatorStack)-1]
+		if top.tokenType == tokenLeftParenthesis {
 			return nil, ErrInvalidExpr
 		}
-
-		out = append(out, tokenizations[len(tokenizations)-1])
-		tokenizations = tokenizations[:len(tokenizations)-1]
+		outputQueue = append(outputQueue, top)
 	}
 
-	return out, nil
+	return outputQueue, nil
 }
