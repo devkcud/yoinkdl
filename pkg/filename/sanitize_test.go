@@ -56,17 +56,19 @@ func TestNew_InvalidFilenames(t *testing.T) {
 	}
 }
 
-func TestFileBasic_FullAndString(t *testing.T) {
-	f, err := filename.New("example.md")
-	if err != nil {
-		t.Fatalf("New returned unexpected error: %v", err)
-	}
+func TestFileBasic_Full(t *testing.T) {
+	f := filename.MustNew("example.md")
 	want := "example.md"
 	if got := f.Full(); got != want {
 		t.Errorf("Full() = %q; want %q", got, want)
 	}
-	if got := f.String(); got != want {
-		t.Errorf("String() = %q; want %q", got, want)
+}
+
+func TestFileBasic_FullCopy(t *testing.T) {
+	f := filename.MustNew("example.md")
+	want := "example_1.md"
+	if got := f.Full(1); got != want {
+		t.Errorf("Full() = %q; want %q", got, want)
 	}
 }
 
