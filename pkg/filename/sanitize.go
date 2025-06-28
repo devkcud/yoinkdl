@@ -11,7 +11,7 @@ var (
 	multiUnderscoreRegex = regexp.MustCompile(`_+`)
 )
 
-func New(filename string) (*FileBasic, error) {
+func New(filename string) (*Basic, error) {
 	if strings.TrimSpace(filename) == "" {
 		return nil, ErrEmptyName
 	}
@@ -24,14 +24,14 @@ func New(filename string) (*FileBasic, error) {
 
 	base, extension := extractSplitFile(filename)
 
-	return &FileBasic{
+	return &Basic{
 		Name:      base,
 		Extension: extension,
 	}, nil
 }
 
 // Panics if the filename is invalid.
-func MustNew(filename string) *FileBasic {
+func MustNew(filename string) *Basic {
 	fb, err := New(filename)
 	if err != nil {
 		panic(err)
