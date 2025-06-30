@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/devkcud/goondl/internal/command"
+	"github.com/devkcud/goondl/internal/cli/command"
 	"github.com/devkcud/goondl/internal/modules/size"
 	"github.com/urfave/cli/v3"
 )
