@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/devkcud/goondl/pkg/filename"
+	"github.com/devkcud/yoinkdl/pkg/filename"
 )
 
 type validFileInfo struct {

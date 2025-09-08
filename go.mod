@@ -1,4 +1,4 @@
-module github.com/devkcud/goondl
+module github.com/devkcud/yoinkdl
 
 go 1.24.4
 

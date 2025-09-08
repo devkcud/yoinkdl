@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/devkcud/goondl/internal/cli/app"
+	"github.com/devkcud/yoinkdl/internal/cli/app"
 )
 
 func main() {

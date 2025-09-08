@@ -1,6 +1,6 @@
 package app
 
-import "github.com/devkcud/goondl/internal/cli/command"
+import "github.com/devkcud/yoinkdl/internal/cli/command"
 
 func New() *command.Builder {
 	return command.
